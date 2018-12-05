@@ -43,6 +43,7 @@ String  cardJson = "";
 String primeiro = "";
 String segundo = "";
 int rele = D1;
+int buzzer = D2;
 ESP8266WebServer server(8081);
 
 
@@ -72,7 +73,9 @@ void handleNotFound() {
 
 void setup() {
   pinMode(D4, OUTPUT);
-  pinMode(D5, OUTPUT);
+  pinMode(D7, OUTPUT);
+  pinMode(D6, OUTPUT);
+  pinMode(buzzer, OUTPUT);
   pinMode(rele, OUTPUT); 
   Serial.begin(115200);    // Initialize serial communications
   delay(250);
@@ -90,20 +93,20 @@ void setup() {
     //Serial.print(".");
   }
   if (WiFi.status() == WL_CONNECTED) {
-    //Serial.println(F("WiFi connected"));
+    Serial.println(F("WiFi connected"));
     // Print the IP address
-    //Serial.print("Use this URL : ");
-    //Serial.print("http://");
-    //Serial.print(WiFi.localIP());
-    //Serial.println("/");
+    Serial.print("Use this URL : ");
+    Serial.print("http://");
+    Serial.print(WiFi.localIP());
+    Serial.println("/");
 
     if (MDNS.begin("esp8266")) {
-      //Serial.println("MDNS responder started");
+      Serial.println("MDNS responder started");
     }
 
-    //Serial.println(F("Ready!"));
-    //Serial.println(F("======================================================"));
-    //Serial.println(F("Scan for Card and print UID:"));
+    Serial.println(F("Ready!"));
+    Serial.println(F("======================================================"));
+    Serial.println(F("Scan for Card and print UID:"));
 
 
   }
@@ -142,6 +145,7 @@ void loop() {
   server.handleClient();
   digitalWrite(D4, LOW);
   digitalWrite(D6, LOW);
+  digitalWrite(D7, LOW);
   String classe = getClassId();
   int classeNivel = getClassNivel();
   //Serial.println(classeNivel);
@@ -178,6 +182,7 @@ void loop() {
     //Serial.print(CARD_id);
     //Serial.println();
     digitalWrite(D4, HIGH);
+    playTone();
     
     if (segundo == "") {
       segundo += "\"" + CARD_id + "\"";
@@ -188,24 +193,36 @@ void loop() {
     //Serial.print(cardJson);
     registroEntrada(cartao,classe);
     abreporta();
+    
   } else {
+    playTone();
     registroSaida(cartao,classe);
     abreporta();
+    digitalWrite(D4, HIGH);
     cardJson.replace(("\"" + CARD_id + "\","), "");
     cardJson.replace((",\"" + CARD_id + "\""), "");
     cardJson.replace(("\"" + CARD_id + "\""), "");
     primeiro.replace(("\"" + CARD_id + "\","), "");
     segundo.replace(("\"" + CARD_id + "\""), "");
-    digitalWrite(D6, HIGH);
     //Serial.print(cardJson);
+   
   }
   }else{///quando o cartão não tem o nivel de acesso
     //Serial.println("acesso nao autorizado");
+    playTone();
+    playTone();
+    digitalWrite(D7, HIGH);
     registroAlerta(cartao,classe);
+
     }
   }else{
+    digitalWrite(D7, HIGH);
     //Serial.println("cartao nao identificado");
     //quando cartao for igual a null
+    playTone();
+    playTone();
+    playTone();
+
     }
 
     
@@ -348,7 +365,13 @@ void registroSaida(String pessoaid, String salaid){
   }
 
   }
-
+void playTone(){
+    Serial.print("musica");
+    tone(buzzer,2500);
+    delay(500);
+    noTone(buzzer);
+    delay(250);
+}
 
 
 void registroAlerta(String pessoaid, String salaid){

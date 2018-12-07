@@ -14,7 +14,7 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
-
+//#include <despacito.h>
 
 
 
@@ -31,8 +31,8 @@
 #define SS_PIN  SS  // SDA-PIN für RC522 - RFID - SPI - Modul GPIO4 
 
 // CONFIGURATIONS
-const char *ssid =  "Thanos";     // change according to your Network - cannot be longer than 32 characters!
-const char *pass =  "meninaesquilo"; // change according to your Network
+const char *ssid =  "Batata";     // change according to your Network - cannot be longer than 32 characters!
+const char *pass =  "batatadoida"; // change according to your Network
 String jsonstart = "{\"cards\":[";
 String jsonend = "]}";
 char  hex_num[8];
@@ -79,18 +79,19 @@ void setup() {
   pinMode(rele, OUTPUT); 
   Serial.begin(115200);    // Initialize serial communications
   delay(250);
-  //Serial.println(F("Booting...."));
+  Serial.println(F("Booting...."));
 
   SPI.begin();           // Init SPI bus
   mfrc522.PCD_Init();    // Init MFRC522
 
   WiFi.begin(ssid, pass);
+  Serial.print("Wifi Connecting");
 
   int retries = 0;
-  while ((WiFi.status() != WL_CONNECTED) && (retries < 10)) {
+  while ((WiFi.status() != WL_CONNECTED) && (retries < 50)) {
     retries++;
     delay(500);
-    //Serial.print(".");
+    Serial.print(".");
   }
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println(F("WiFi connected"));
@@ -114,27 +115,27 @@ void setup() {
 
   server.on("/", handleRoot);
   server.begin();
-  //Serial.println("HTTP server started");
+  Serial.println("HTTP server started");
 
 
   if (WiFi.status() == WL_CONNECTED) { //Check WiFi connection status
 
     HTTPClient http;    //Declare object of class HTTPClient
 
-    http.begin("http://177.34.95.63:8080/json/arduino/updatearduino/1");      //Specify request destination
+    http.begin("http://192.168.43.253:8080/json/arduino/updatearduino/1");      //Specify request destination
     http.addHeader("Content-Type", "application/json");  //Specify content-type header
     String ip = WiFi.localIP().toString();
-    int httpCode = http.PUT("{\"name\":\"Cadastro\",\"ip\":\"" + ip + ":8081\"}");   //Send the request
+    int httpCode = http.PUT("{\"name\":\"Arduino_1\",\"ip\":\"" + ip + ":8081\"}");   //Send the request
     String payload = http.getString();                  //Get the response payload
-    //Serial.println("POST");
-    //Serial.println(httpCode);   //Print HTTP return code
-    //Serial.println(payload);    //Print request response payload
+    Serial.println("POST");
+    Serial.println(httpCode);   //Print HTTP return code
+    Serial.println(payload);    //Print request response payload
 
     http.end();  //Close connection
 
   } else {
 
-    //Serial.println("Error in WiFi connection");
+    Serial.println("Error in WiFi connection");
 
   }
 
@@ -146,9 +147,7 @@ void loop() {
   digitalWrite(D4, LOW);
   digitalWrite(D6, LOW);
   digitalWrite(D7, LOW);
-  String classe = getClassId();
-  int classeNivel = getClassNivel();
-  //Serial.println(classeNivel);
+  
 
 
 
@@ -167,20 +166,23 @@ void loop() {
   for (byte i = 0; i < mfrc522.uid.size; i++) {
     hex_num[i] = (mfrc522.uid.uidByte[i]);
     CARD_id += (mfrc522.uid.uidByte[i]);
-    // //Serial.print(hex_num[i],HEX);
+    // Serial.print(hex_num[i],HEX);
   }
-    //Serial.println(CARD_id);
+    Serial.println(CARD_id);
     String cartao = getPessoaId(CARD_id);   // pega o cartão
-    //Serial.println(cartao);
+    Serial.println(cartao);
     if(cartao != "null"){ //// Verifica cartão
+      String classe = getClassId();
+      int classeNivel = getClassNivel();
+      Serial.println(classeNivel);
       int pessoaNivel = getPessoaNivel(CARD_id);// pega nivel de acesso do cartão
-      //Serial.println(pessoaNivel);
+      Serial.println(pessoaNivel);
       if(pessoaNivel>=classeNivel){// valida nivel de acesso do cartão
       
   if (cardJson.indexOf(CARD_id) == -1) {
-    //Serial.println();
-    //Serial.print(CARD_id);
-    //Serial.println();
+    Serial.println();
+    Serial.print(CARD_id);
+    Serial.println();
     digitalWrite(D4, HIGH);
     playTone();
     
@@ -190,7 +192,7 @@ void loop() {
       primeiro += "\"" + CARD_id + "\",";
     }
     cardJson = primeiro + segundo;
-    //Serial.print(cardJson);
+    Serial.print(cardJson);
     registroEntrada(cartao,classe);
     abreporta();
     
@@ -204,11 +206,11 @@ void loop() {
     cardJson.replace(("\"" + CARD_id + "\""), "");
     primeiro.replace(("\"" + CARD_id + "\","), "");
     segundo.replace(("\"" + CARD_id + "\""), "");
-    //Serial.print(cardJson);
+    Serial.print(cardJson);
    
   }
   }else{///quando o cartão não tem o nivel de acesso
-    //Serial.println("acesso nao autorizado");
+    Serial.println("acesso nao autorizado");
     playTone();
     playTone();
     digitalWrite(D7, HIGH);
@@ -217,11 +219,12 @@ void loop() {
     }
   }else{
     digitalWrite(D7, HIGH);
-    //Serial.println("cartao nao identificado");
+    Serial.println("cartao nao identificado");
     //quando cartao for igual a null
     playTone();
     playTone();
     playTone();
+    //despacito();
 
     }
 
@@ -241,7 +244,7 @@ String getClassId() {
   if (WiFi.status() == WL_CONNECTED) { //Check WiFi connection status
     HTTPClient http;  //Declare an object of class HTTPClient
     String ip = WiFi.localIP().toString();
-    http.begin("http://177.34.95.63:8080/json/arduino/getsala/" + ip + ":" + "8081");      //Specify request destination
+    http.begin("http://192.168.43.253:8080/json/arduino/getsala/" + ip + ":" + "8081");      //Specify request destination
     int httpCode = http.GET();                                                                  //Send the request
     if (httpCode > 0) { //Check the returning code
       String payload = http.getString();   //Get the request response payload                    //Print the response payload
@@ -251,7 +254,7 @@ String getClassId() {
     }
     http.end();   //Close connection
   } else {
-    //Serial.println("Error in WiFi connection");
+    Serial.println("Error in WiFi connection");
   }
 }
 
@@ -259,7 +262,7 @@ int getClassNivel() {
   if (WiFi.status() == WL_CONNECTED) { //Check WiFi connection status
     HTTPClient http;  //Declare an object of class HTTPClient
     String ip = WiFi.localIP().toString();
-    http.begin("http://177.34.95.63:8080/json/arduino/salanivel/" + ip + ":" + "8081");      //Specify request destination
+    http.begin("http://192.168.43.253:8080/json/arduino/salanivel/" + ip + ":" + "8081");      //Specify request destination
     int httpCode = http.GET();                                                                  //Send the request
     if (httpCode > 0) { //Check the returning code
       String payload = http.getString();   //Get the request response payload                    //Print the response payload
@@ -269,17 +272,17 @@ int getClassNivel() {
     }
     http.end();   //Close connection
   } else {
-    //Serial.println("Error in WiFi connection");
+    Serial.println("Error in WiFi connection");
   }
 }
 
  String getPessoaId(String cartao) {
   if (WiFi.status() == WL_CONNECTED) { //Check WiFi connection status
     HTTPClient http;  //Declare an object of class HTTPClient
-    http.begin("http://177.34.95.63:8080/json/arduino/getpessoa/" + cartao);      //Specify request destination
+    http.begin("http://192.168.43.253:8080/json/arduino/getpessoa/" + cartao);      //Specify request destination
     int httpCode = http.GET();                                                                  //Send the request
     if (httpCode > 0) { //Check the returning code
-      //Serial.println("GET cartao");
+      Serial.println("GET cartao");
       String payload = http.getString();   //Get the request response payload                    //Print the response payload
       payload.replace("{\"id\":", "");
       payload.replace("}", "");
@@ -287,16 +290,16 @@ int getClassNivel() {
     }
     http.end();   //Close connection
   } else {
-    //Serial.println("Error in WiFi connection");
+    Serial.println("Error in WiFi connection");
   }
  }
  int getPessoaNivel(String cartao) {
   if (WiFi.status() == WL_CONNECTED) { //Check WiFi connection status
     HTTPClient http;  //Declare an object of class HTTPClient
-    http.begin("http://177.34.95.63:8080/json/arduino/findcard/" + cartao);      //Specify request destination
+    http.begin("http://192.168.43.253:8080/json/arduino/findcard/" + cartao);      //Specify request destination
     int httpCode = http.GET();                                                                  //Send the request
     if (httpCode > 0) { //Check the returning code
-      //Serial.println("GET cartao");
+      Serial.println("GET cartao");
       String payload = http.getString();   //Get the request response payload                    //Print the response payload
       payload.replace("{\"acesso\":", "");
       payload.replace("}", "");
@@ -304,7 +307,7 @@ int getClassNivel() {
     }
     http.end();   //Close connection
   } else {
-    //Serial.println("Error in WiFi connection");
+    Serial.println("Error in WiFi connection");
   }
 
  }
@@ -323,19 +326,19 @@ void registroEntrada(String pessoaid, String salaid){
 
     HTTPClient http;    //Declare object of class HTTPClient
 
-    http.begin("http://177.34.95.63:8080/json/arduino/insereregistro");      //Specify request destination
+    http.begin("http://192.168.43.253:8080/json/arduino/insereregistro");      //Specify request destination
     http.addHeader("Content-Type", "application/json");  //Specify content-type header
     String ip = WiFi.localIP().toString();
     int httpCode = http.POST("{\"sala\":"+ salaid + ",\"pessoa\":"+ pessoaid +",\"datahora\":\""+insert+"\",\"entrada\":true,\"alert\":false}");   //Send the request
     String payload = http.getString();                  //Get the response payload
-    //Serial.println("POST");
-    //Serial.println(httpCode);   //Print HTTP return code
-    //Serial.println(payload);    //Print request response payload
+    Serial.println("POST");
+    Serial.println(httpCode);   //Print HTTP return code
+    Serial.println(payload);    //Print request response payload
     http.end();  //Close connection
-    //Serial.println("registrou entrada");
+    Serial.println("registrou entrada");
   } else {
 
-    //Serial.println("Error in WiFi connection");
+    Serial.println("Error in WiFi connection");
 
   }
   
@@ -348,19 +351,19 @@ void registroSaida(String pessoaid, String salaid){
 
     HTTPClient http;    //Declare object of class HTTPClient
 
-    http.begin("http://177.34.95.63:8080/json/arduino/insereregistro");      //Specify request destination
+    http.begin("http://192.168.43.253:8080/json/arduino/insereregistro");      //Specify request destination
     http.addHeader("Content-Type", "application/json");  //Specify content-type header
     String ip = WiFi.localIP().toString();
     int httpCode = http.POST("{\"sala\":"+ salaid + ",\"pessoa\":"+ pessoaid +",\"datahora\":\""+insert+"\",\"entrada\":false,\"alert\":false}");   //Send the request
     String payload = http.getString();                  //Get the response payload
-    //Serial.println("POST");
-    //Serial.println(httpCode);   //Print HTTP return code
-    //Serial.println(payload);    //Print request response payload
+    Serial.println("POST");
+    Serial.println(httpCode);   //Print HTTP return code
+    Serial.println(payload);    //Print request response payload
     http.end();  //Close connection
-    //Serial.println("registrou saida");
+    Serial.println("registrou saida");
   } else {
 
-    //Serial.println("Error in WiFi connection");
+    Serial.println("Error in WiFi connection");
 
   }
 
@@ -381,19 +384,19 @@ void registroAlerta(String pessoaid, String salaid){
 
     HTTPClient http;    //Declare object of class HTTPClient
 
-    http.begin("http://177.34.95.63:8080/json/arduino/insereregistro");      //Specify request destination
+    http.begin("http://192.168.43.253:8080/json/arduino/insereregistro");      //Specify request destination
     http.addHeader("Content-Type", "application/json");  //Specify content-type header
     String ip = WiFi.localIP().toString();
     int httpCode = http.POST("{\"sala\":"+ salaid + ",\"pessoa\":"+ pessoaid +",\"datahora\":\""+insert+"\",\"entrada\":false,\"alert\":true}");   //Send the request
     String payload = http.getString();                  //Get the response payload
-    //Serial.println("POST");
-    //Serial.println(httpCode);   //Print HTTP return code
-    //Serial.println(payload);    //Print request response payload
+    Serial.println("POST");
+    Serial.println(httpCode);   //Print HTTP return code
+    Serial.println(payload);    //Print request response payload
     http.end();  //Close connection
-    //Serial.println("registrou saida");
+    Serial.println("registrou alerta");
   } else {
 
-    //Serial.println("Error in WiFi connection");
+    Serial.println("Error in WiFi connection");
 
   }
 
@@ -405,18 +408,18 @@ void registroAlerta(String pessoaid, String salaid){
   String getUTC() {
   if (WiFi.status() == WL_CONNECTED) { //Check WiFi connection status
     HTTPClient http;  //Declare an object of class HTTPClient
-    http.begin("http://worldclockapi.com/api/json/utc/now");      //Specify request destination
+    http.begin("http://192.168.43.253:8080/json/arduino/datahora");      //Specify request destination
     int httpCode = http.GET();                                                                  //Send the request
     if (httpCode > 0) { //Check the returning code
-      //Serial.println("GET cartao");
+      Serial.println("GET cartao");
       String payload = http.getString();   //Get the request response payload                    //Print the response payload
-      payload = payload.substring(30, 47);
-      //Serial.println(payload);
+      payload = payload.substring(13, 48);
+      Serial.println(payload);
       return (payload);
     }
     http.end();   //Close connection
   } else {
-    //Serial.println("Error in WiFi connection");
+    Serial.println("Error in WiFi connection");
   }
 
  }
